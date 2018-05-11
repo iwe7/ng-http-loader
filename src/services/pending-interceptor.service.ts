@@ -17,6 +17,7 @@ export class PendingInterceptorService implements HttpInterceptor {
     private _pendingRequests = 0;
     private _pendingRequestsStatus: ReplaySubject<boolean> = new ReplaySubject<boolean>(1);
     private _filteredUrlPatterns: RegExp[] = [];
+    private _forceByPass: boolean;
 
     get pendingRequestsStatus(): Observable<boolean> {
         return this._pendingRequestsStatus.asObservable();
@@ -30,14 +31,18 @@ export class PendingInterceptorService implements HttpInterceptor {
         return this._filteredUrlPatterns;
     }
 
-    private shouldBypass(url: string): boolean {
+    set forceByPass(value: boolean) {
+        this._forceByPass = value;
+    }
+
+    private shouldBypassUrl(url: string): boolean {
         return this._filteredUrlPatterns.some(e => {
             return e.test(url);
         });
     }
 
     intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-        const shouldBypass = this.shouldBypass(req.urlWithParams);
+        const shouldBypass = this.shouldBypassUrl(req.urlWithParams) || this._forceByPass;
 
         if (!shouldBypass) {
             this._pendingRequests++;
